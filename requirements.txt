@@ -17,3 +17,5 @@ requests>=2.31.0
 rank_bm25>=0.2.2
 
 wikipedia>=1.4.0
+
+docx2txt>=0.8
