@@ -12,6 +12,7 @@ import wikipedia
 # from rag_utils import create_rag_chain
 from langchain.chains import RetrievalQA
 
+
 def create_rag_chain(vectorstore, documents=None):
     llm = ChatGroq(
         api_key=os.getenv("GROQ_API_KEY"),
@@ -233,6 +234,9 @@ if st.sidebar.button("Process Documents"):
                         progress_bar.progress(int((i + 1) / len(uploaded_files) * 25))
                         
                         docs = load_and_split(tmp_path)
+                        print(f"Loaded {len(docs)} docs from {uploaded_file.name}")
+                        for d in docs[:2]:
+                            print(d.page_content[:200])
                         all_docs.extend(docs)
                     
                     progress_bar.progress(50)
@@ -369,7 +373,22 @@ else:
             st.error("Please try rephrasing your question or check your API key.")
 
     elif user_question:
-        if not st.session_state.get("rag_chain"):
+        if st.session_state.get("rag_chain"):
+            # Use RAG to answer based on uploaded documents
+            try:
+                with st.spinner("🤔 Thinking..."):
+                    result = st.session_state["rag_chain"]({"query": user_question})
+                    answer = result["result"]
+                    st.session_state["conversations"][st.session_state["current_conversation"]].append((user_question, answer))
+                    st.markdown(f"""
+                    <div class="chat-message bot-message">
+                        <strong>🤖 Assistant:</strong> {answer}
+                    </div>
+                    """, unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"❌ Error processing your question: {str(e)}")
+                st.error("Please try rephrasing your question or check your API key.")
+        else:
             # Fallback: Search Wikipedia if no documents are processed
             try:
                 with st.spinner("🔎 Searching Wikipedia..."):
